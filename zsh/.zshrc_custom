@@ -1,0 +1,6 @@
+alias gs="git status -sb"
+alias gl="git log --oneline -n 20"
+alias l="ls -la"
+alias ll="ls -lh"
+alias k="kubectl"
+alias tf="terraform"

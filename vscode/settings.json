@@ -1,0 +1,11 @@
+{
+    "workbench.colorTheme": "Visual Studio Light",
+    "window.newWindowProfile": "Default",
+    "workbench.startupEditor": "none",
+    "git.addAICoAuthor": "off",    
+    "editor.minimap.enabled": false,
+    "chat.tips.enabled": false,    
+    "explorer.confirmDragAndDrop": true,
+    "explorer.confirmDelete": true,
+    "git.confirmSync": true
+}

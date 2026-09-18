@@ -1,0 +1,14 @@
+# OS generated files 
+.DS_Store
+.DS_Store?
+._*
+.Trashes
+
+# IDE / Editor artifacts
+.idea/
+
+# Environment & Credentials
+.env
+.env.local
+*.tfstate
+*.tfstate.backup

@@ -1,8 +1,5 @@
 cask_args appdir: "/Applications"
 
-# Taps
-tap "hashicorp/tap"
-
 # CLI tools
 brew "git"
 brew "jq"
@@ -10,13 +7,12 @@ brew "helm"
 brew "awscli"
 brew "ansible"
 brew "ansible-lint"
-brew "terraform"
 brew "kubernetes-cli"
 
 # Applications (Casks)
-# Browsers
+# Browsers & Media
 cask "brave-browser"
-cask "firefox"
+cask "spotify"
 
 # Editors & IDEs
 cask "visual-studio-code"

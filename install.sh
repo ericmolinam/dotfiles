@@ -16,76 +16,92 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 # Dotfiles root directory
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARCH="$(uname -m)"
+ZSHRC="${HOME}/.zshrc"
 
-log_info "Starting dotfiles setup from ${DOTFILES_DIR} (Architecture: ${ARCH})..."
+STEPS=(prereqs brew links gpg zsh helm claude macos)
 
-# 1. Rosetta 2
-if [[ "${ARCH}" == "arm64" ]]; then
-    if arch -x86_64 /usr/bin/true 2>/dev/null; then
-        log_info "Rosetta 2 is already installed."
+load_brew() {
+    local brew_bin
+    if command -v brew >/dev/null 2>&1; then
+        brew_bin="$(command -v brew)"
+    elif [[ -x /opt/homebrew/bin/brew ]]; then
+        brew_bin=/opt/homebrew/bin/brew
+    elif [[ -x /usr/local/bin/brew ]]; then
+        brew_bin=/usr/local/bin/brew
     else
-        log_info "Installing Rosetta 2..."
-        /usr/sbin/softwareupdate --install-rosetta --agree-to-license
-        log_success "Rosetta 2 installed."
+        log_error "Homebrew not found. Run the brew step first."
+        return 1
     fi
-fi
+    eval "$("${brew_bin}" shellenv)"
+}
 
-# 2. Xcode Command Line Tools
-if xcode-select -p >/dev/null 2>&1; then
-    log_info "Xcode Command Line Tools already installed."
-else
-    log_info "Installing Xcode Command Line Tools..."
-    xcode-select --install
-    until xcode-select -p >/dev/null 2>&1; do
-        sleep 5
-    done
-    log_success "Xcode Command Line Tools installed."
-fi
+step_prereqs() {
+    if [[ "${ARCH}" == "arm64" ]]; then
+        if arch -x86_64 /usr/bin/true 2>/dev/null; then
+            log_info "Rosetta 2 is already installed."
+        else
+            log_info "Installing Rosetta 2..."
+            /usr/sbin/softwareupdate --install-rosetta --agree-to-license
+            log_success "Rosetta 2 installed."
+        fi
+    fi
 
-# 3. Homebrew
-if [[ "${ARCH}" == "arm64" ]]; then
-    BREW_PREFIX="/opt/homebrew"
-else
-    BREW_PREFIX="/usr/local"
-fi
-BREW_BIN="${BREW_PREFIX}/bin/brew"
+    if xcode-select -p >/dev/null 2>&1; then
+        log_info "Xcode Command Line Tools already installed."
+    else
+        log_info "Installing Xcode Command Line Tools..."
+        xcode-select --install
+        until xcode-select -p >/dev/null 2>&1; do
+            sleep 5
+        done
+        log_success "Xcode Command Line Tools installed."
+    fi
+}
 
-if command -v brew >/dev/null 2>&1; then
-    BREW_BIN="$(command -v brew)"
-    log_info "Homebrew found at ${BREW_BIN}."
-elif [[ -x "${BREW_BIN}" ]]; then
-    log_info "Homebrew found at ${BREW_BIN}."
-else
-    log_info "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    log_success "Homebrew installed."
-fi
+step_brew() {
+    local brew_prefix brew_bin
+    if [[ "${ARCH}" == "arm64" ]]; then
+        brew_prefix="/opt/homebrew"
+    else
+        brew_prefix="/usr/local"
+    fi
+    brew_bin="${brew_prefix}/bin/brew"
 
-eval "$("${BREW_BIN}" shellenv)"
+    if command -v brew >/dev/null 2>&1; then
+        brew_bin="$(command -v brew)"
+        log_info "Homebrew found at ${brew_bin}."
+    elif [[ -x "${brew_bin}" ]]; then
+        log_info "Homebrew found at ${brew_bin}."
+    else
+        log_info "Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        log_success "Homebrew installed."
+    fi
 
-ZPROFILE="${HOME}/.zprofile"
-SHELLENV_CMD="eval \"\$(${BREW_BIN} shellenv)\""
-if [[ -f "${ZPROFILE}" ]] && grep -qF "${BREW_BIN} shellenv" "${ZPROFILE}"; then
-    log_info "Homebrew shellenv already configured in ${ZPROFILE}."
-else
-    log_info "Adding Homebrew shellenv to ${ZPROFILE}..."
-    echo -e "\n# Homebrew environment\n${SHELLENV_CMD}" >> "${ZPROFILE}"
-    log_success "Homebrew added to ${ZPROFILE}."
-fi
+    eval "$("${brew_bin}" shellenv)"
 
-# 4. Install packages via Brewfile
-BREWFILE="${DOTFILES_DIR}/Brewfile"
-if [[ -f "${BREWFILE}" ]]; then
-    log_info "Updating Homebrew formulae..."
-    brew update --quiet
-    log_info "Running brew bundle to install CLI tools, apps, and extensions..."
-    brew bundle install --file="${BREWFILE}"
-    log_success "Brewfile packages are up to date."
-else
-    log_warn "No Brewfile found at ${BREWFILE}. Skipping package installation."
-fi
+    local zprofile="${HOME}/.zprofile"
+    local shellenv_cmd="eval \"\$(${brew_bin} shellenv)\""
+    if [[ -f "${zprofile}" ]] && grep -qF "${brew_bin} shellenv" "${zprofile}"; then
+        log_info "Homebrew shellenv already configured in ${zprofile}."
+    else
+        log_info "Adding Homebrew shellenv to ${zprofile}..."
+        echo -e "\n# Homebrew environment\n${shellenv_cmd}" >> "${zprofile}"
+        log_success "Homebrew added to ${zprofile}."
+    fi
 
-# 5. Dotfiles configuration
+    local brewfile="${DOTFILES_DIR}/Brewfile"
+    if [[ -f "${brewfile}" ]]; then
+        log_info "Updating Homebrew formulae..."
+        brew update --quiet
+        log_info "Running brew bundle to install CLI tools, apps, and extensions..."
+        brew bundle install --file="${brewfile}"
+        log_success "Brewfile packages are up to date."
+    else
+        log_warn "No Brewfile found at ${brewfile}. Skipping package installation."
+    fi
+}
+
 create_symlink() {
     local src="$1"
     local dest="$2"
@@ -106,80 +122,107 @@ create_symlink() {
     log_success "Created symlink: ${dest} -> ${src}"
 }
 
-log_info "Linking configuration files..."
+step_links() {
+    log_info "Linking configuration files..."
+    create_symlink "${DOTFILES_DIR}/git/.gitconfig" "${HOME}/.gitconfig"
+    create_symlink "${DOTFILES_DIR}/git/.gitignore_global" "${HOME}/.gitignore_global"
 
-# Git config & global ignore
-create_symlink "${DOTFILES_DIR}/git/.gitconfig" "${HOME}/.gitconfig"
-create_symlink "${DOTFILES_DIR}/git/.gitignore_global" "${HOME}/.gitignore_global"
+    local vscode_user_dir="${HOME}/Library/Application Support/Code/User"
+    create_symlink "${DOTFILES_DIR}/vscode/settings.json" "${vscode_user_dir}/settings.json"
+}
 
-# VS Code settings
-VSCODE_USER_DIR="${HOME}/Library/Application Support/Code/User"
-create_symlink "${DOTFILES_DIR}/vscode/settings.json" "${VSCODE_USER_DIR}/settings.json"
+step_gpg() {
+    load_brew
+    local gpg_bin gpg2_bin
+    gpg_bin="$(brew --prefix)/bin/gpg"
+    gpg2_bin="$(brew --prefix)/bin/gpg2"
+    if [[ -x "${gpg_bin}" && ! -e "${gpg2_bin}" ]]; then
+        ln -s "${gpg_bin}" "${gpg2_bin}"
+        log_success "Created symlink: ${gpg2_bin} -> ${gpg_bin}"
+    else
+        log_info "gpg2 symlink already present or gpg not installed."
+    fi
+}
 
-# Custom zsh sourcing in ~/.zshrc
-ZSHRC="${HOME}/.zshrc"
-CUSTOM_SOURCE="[[ -f \"${DOTFILES_DIR}/zsh/.zshrc_custom\" ]] && source \"${DOTFILES_DIR}/zsh/.zshrc_custom\""
-if [[ -f "${ZSHRC}" ]] && grep -qF ".zshrc_custom" "${ZSHRC}"; then
-    log_info "Custom zsh config already sourced in ${ZSHRC}."
+step_zsh() {
+    local custom_source
+    custom_source="[[ -f \"${DOTFILES_DIR}/zsh/.zshrc_custom\" ]] && source \"${DOTFILES_DIR}/zsh/.zshrc_custom\""
+    if [[ -f "${ZSHRC}" ]] && grep -qF ".zshrc_custom" "${ZSHRC}"; then
+        log_info "Custom zsh config already sourced in ${ZSHRC}."
+    else
+        log_info "Adding custom zsh config source to ${ZSHRC}..."
+        echo -e "\n# Sourced from dotfiles\n${custom_source}" >> "${ZSHRC}"
+        log_success "Custom zsh aliases & config sourced in ${ZSHRC}."
+    fi
+
+    local omz_dir="${HOME}/.oh-my-zsh"
+    if [[ -d "${omz_dir}" ]]; then
+        log_info "oh-my-zsh already installed."
+    else
+        log_info "Installing oh-my-zsh..."
+        RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        log_success "oh-my-zsh installed."
+    fi
+
+    local autosuggestions_dir="${ZSH_CUSTOM:-${omz_dir}/custom}/plugins/zsh-autosuggestions"
+    if [[ -d "${autosuggestions_dir}" ]]; then
+        log_info "zsh-autosuggestions already installed."
+    else
+        log_info "Installing zsh-autosuggestions..."
+        git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions "${autosuggestions_dir}"
+        log_success "zsh-autosuggestions installed."
+    fi
+
+    local omz_source
+    omz_source="[[ -f \"${DOTFILES_DIR}/zsh/.zshrc_omz\" ]] && source \"${DOTFILES_DIR}/zsh/.zshrc_omz\""
+    if [[ -f "${ZSHRC}" ]] && grep -qE "\.zshrc_omz|oh-my-zsh\.sh" "${ZSHRC}"; then
+        log_info "oh-my-zsh already configured in ${ZSHRC}."
+    else
+        log_info "Adding oh-my-zsh config source to ${ZSHRC}..."
+        echo -e "\n# oh-my-zsh from dotfiles\n${omz_source}" >> "${ZSHRC}"
+        log_success "oh-my-zsh config sourced in ${ZSHRC}."
+    fi
+}
+
+step_helm() {
+    load_brew
+    log_info "Installing helm plugins..."
+    "${DOTFILES_DIR}/helm/plugins.sh"
+}
+
+step_claude() {
+    load_brew
+    log_info "Setting up Claude Code..."
+    "${DOTFILES_DIR}/claude/install-claude.sh"
+}
+
+step_macos() {
+    local macos_defaults="${DOTFILES_DIR}/macos/defaults.sh"
+    if [[ -f "${macos_defaults}" ]]; then
+        chmod +x "${macos_defaults}"
+        log_info "Applying macOS system defaults..."
+        "${macos_defaults}"
+        log_success "macOS defaults applied."
+    fi
+}
+
+run_step() {
+    local step="$1"
+    if ! declare -F "step_${step}" >/dev/null; then
+        log_error "Unknown step: ${step}. Valid steps: ${STEPS[*]}"
+        exit 1
+    fi
+    "step_${step}"
+}
+
+if [[ $# -eq 0 ]]; then
+    log_info "Starting dotfiles setup from ${DOTFILES_DIR} (Architecture: ${ARCH})..."
+    for step in "${STEPS[@]}"; do
+        run_step "${step}"
+    done
+    log_success "Dotfiles initialization complete!"
 else
-    log_info "Adding custom zsh config source to ${ZSHRC}..."
-    echo -e "\n# Sourced from dotfiles\n${CUSTOM_SOURCE}" >> "${ZSHRC}"
-    log_success "Custom zsh aliases & config sourced in ${ZSHRC}."
+    for step in "$@"; do
+        run_step "${step}"
+    done
 fi
-
-# gpg2 symlink (Homebrew's gnupg2 installs the binary as gpg)
-GPG_BIN="$(brew --prefix)/bin/gpg"
-GPG2_BIN="$(brew --prefix)/bin/gpg2"
-if [[ -x "${GPG_BIN}" && ! -e "${GPG2_BIN}" ]]; then
-    ln -s "${GPG_BIN}" "${GPG2_BIN}"
-    log_success "Created symlink: ${GPG2_BIN} -> ${GPG_BIN}"
-else
-    log_info "gpg2 symlink already present or gpg not installed."
-fi
-
-# oh-my-zsh, zsh-autosuggestions and theme/plugin config
-OMZ_DIR="${HOME}/.oh-my-zsh"
-if [[ -d "${OMZ_DIR}" ]]; then
-    log_info "oh-my-zsh already installed."
-else
-    log_info "Installing oh-my-zsh..."
-    RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    log_success "oh-my-zsh installed."
-fi
-
-AUTOSUGGESTIONS_DIR="${ZSH_CUSTOM:-${OMZ_DIR}/custom}/plugins/zsh-autosuggestions"
-if [[ -d "${AUTOSUGGESTIONS_DIR}" ]]; then
-    log_info "zsh-autosuggestions already installed."
-else
-    log_info "Installing zsh-autosuggestions..."
-    git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions "${AUTOSUGGESTIONS_DIR}"
-    log_success "zsh-autosuggestions installed."
-fi
-
-OMZ_SOURCE="[[ -f \"${DOTFILES_DIR}/zsh/.zshrc_omz\" ]] && source \"${DOTFILES_DIR}/zsh/.zshrc_omz\""
-if [[ -f "${ZSHRC}" ]] && grep -qE "\.zshrc_omz|oh-my-zsh\.sh" "${ZSHRC}"; then
-    log_info "oh-my-zsh already configured in ${ZSHRC}."
-else
-    log_info "Adding oh-my-zsh config source to ${ZSHRC}..."
-    echo -e "\n# oh-my-zsh from dotfiles\n${OMZ_SOURCE}" >> "${ZSHRC}"
-    log_success "oh-my-zsh config sourced in ${ZSHRC}."
-fi
-
-# Helm plugins
-log_info "Installing helm plugins..."
-"${DOTFILES_DIR}/helm/plugins.sh"
-
-# Claude Code CLI, plugins and skills
-log_info "Setting up Claude Code..."
-"${DOTFILES_DIR}/claude/install-claude.sh"
-
-# 6. macOS defaults
-MACOS_DEFAULTS="${DOTFILES_DIR}/macos/defaults.sh"
-if [[ -f "${MACOS_DEFAULTS}" ]]; then
-    chmod +x "${MACOS_DEFAULTS}"
-    log_info "Applying macOS system defaults..."
-    "${MACOS_DEFAULTS}"
-    log_success "macOS defaults applied."
-fi
-
-log_success "Dotfiles initialization complete!"

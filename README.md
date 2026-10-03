@@ -12,6 +12,10 @@ The script is safe to run multiple times:
 - Symlinks check existing targets and create automatic `.backup` copies before replacing if needed.
 - `~/.zprofile` and `~/.zshrc` lines are checked before appending to avoid duplicate entries.
 
+## Make targets
+
+`make help` lists them. `make all` runs every step in order. Run one step with `make brew`, `make links`, `make gpg`, `make zsh`, `make helm`, `make claude`, `make macos` or `make prereqs`. `make check` checks script syntax and the Brewfile. `./install.sh <step>` does the same as `make <step>`.
+
 ## What gets installed
 
 | Step | Source | Content |

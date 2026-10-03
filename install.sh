@@ -127,6 +127,52 @@ else
     log_success "Custom zsh aliases & config sourced in ${ZSHRC}."
 fi
 
+# gpg2 symlink (Homebrew's gnupg2 installs the binary as gpg)
+GPG_BIN="$(brew --prefix)/bin/gpg"
+GPG2_BIN="$(brew --prefix)/bin/gpg2"
+if [[ -x "${GPG_BIN}" && ! -e "${GPG2_BIN}" ]]; then
+    ln -s "${GPG_BIN}" "${GPG2_BIN}"
+    log_success "Created symlink: ${GPG2_BIN} -> ${GPG_BIN}"
+else
+    log_info "gpg2 symlink already present or gpg not installed."
+fi
+
+# oh-my-zsh, zsh-autosuggestions and theme/plugin config
+OMZ_DIR="${HOME}/.oh-my-zsh"
+if [[ -d "${OMZ_DIR}" ]]; then
+    log_info "oh-my-zsh already installed."
+else
+    log_info "Installing oh-my-zsh..."
+    RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    log_success "oh-my-zsh installed."
+fi
+
+AUTOSUGGESTIONS_DIR="${ZSH_CUSTOM:-${OMZ_DIR}/custom}/plugins/zsh-autosuggestions"
+if [[ -d "${AUTOSUGGESTIONS_DIR}" ]]; then
+    log_info "zsh-autosuggestions already installed."
+else
+    log_info "Installing zsh-autosuggestions..."
+    git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions "${AUTOSUGGESTIONS_DIR}"
+    log_success "zsh-autosuggestions installed."
+fi
+
+OMZ_SOURCE="[[ -f \"${DOTFILES_DIR}/zsh/.zshrc_omz\" ]] && source \"${DOTFILES_DIR}/zsh/.zshrc_omz\""
+if [[ -f "${ZSHRC}" ]] && grep -qE "\.zshrc_omz|oh-my-zsh\.sh" "${ZSHRC}"; then
+    log_info "oh-my-zsh already configured in ${ZSHRC}."
+else
+    log_info "Adding oh-my-zsh config source to ${ZSHRC}..."
+    echo -e "\n# oh-my-zsh from dotfiles\n${OMZ_SOURCE}" >> "${ZSHRC}"
+    log_success "oh-my-zsh config sourced in ${ZSHRC}."
+fi
+
+# Helm plugins
+log_info "Installing helm plugins..."
+"${DOTFILES_DIR}/helm/plugins.sh"
+
+# Claude Code CLI, plugins and skills
+log_info "Setting up Claude Code..."
+"${DOTFILES_DIR}/claude/install-claude.sh"
+
 # 6. macOS defaults
 MACOS_DEFAULTS="${DOTFILES_DIR}/macos/defaults.sh"
 if [[ -f "${MACOS_DEFAULTS}" ]]; then

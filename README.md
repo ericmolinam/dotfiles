@@ -23,5 +23,3 @@ The script is safe to run multiple times:
 | Helm | `helm/plugins.sh` | plugins `secrets`, `unittest` |
 | Claude Code | `claude/install-claude.sh` | CLI, plugin `atlassian@claude-plugins-official`, skills `herdr`, `find-skills`, `terraform-skill` |
 | macOS | `macos/defaults.sh` | system defaults |
-
-Terraform versions are managed with `tfenv`. Company specific tools and env vars (Kodify plugin, `AWS_PROFILE`, `KODIFY_EMAIL`) are not tracked here.

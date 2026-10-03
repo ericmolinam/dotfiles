@@ -1,0 +1,9 @@
+export PATH="$HOME/.local/bin:$PATH"
+[[ -d "$(brew --prefix helm@3 2>/dev/null)/bin" ]] && export PATH="$(brew --prefix helm@3)/bin:$PATH"
+
+alias gs="git status -sb"
+alias gl="git log --oneline -n 20"
+alias l="ls -la"
+alias ll="ls -lh"
+alias k="kubectl"
+alias tf="terraform"

@@ -17,6 +17,7 @@ brew "ansible-lint"
 
 # Terminal & dev utilities
 brew "bat"
+brew "git"
 brew "git-delta"
 brew "glow"
 brew "go"
@@ -27,19 +28,12 @@ brew "node"
 brew "watch"
 
 # Applications (Casks)
-# Browsers & Media
-cask "brave-browser"
-cask "spotify"
-
-# Editors, IDEs & Programming
-cask "claude"
-cask "docker-desktop"
 cask "visual-studio-code"
+cask "docker-desktop"
 
-# Productivity & Window Management
+cask "brave-browser"
+cask "bitwarden"
+
 cask "rectangle"
 cask "dockdoor"
 cask "maccy"
-
-# Security & Communication
-cask "bitwarden"

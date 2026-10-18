@@ -32,8 +32,8 @@ git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions.git \
 ```
 
 ```sh
-cd "$HOME/dotfiles"
-backup_dir="$HOME/dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+cd "$HOME/.dotfiles"
+backup_dir="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$backup_dir"
 for file in .zshrc .gitconfig .gitignore_global; do
   if [ -e "$HOME/$file" ] || [ -L "$HOME/$file" ]; then
@@ -56,13 +56,13 @@ Optional setup:
 Run either script as needed; the macOS script changes system preferences.
 
 ```sh
-bash "$HOME/dotfiles/scripts/setup-claude.sh"
-bash "$HOME/dotfiles/scripts/macos-defaults.sh"
+bash "$HOME/.dotfiles/scripts/setup-claude.sh"
+bash "$HOME/.dotfiles/scripts/macos-defaults.sh"
 ```
 
 Unlink configuration:
 
 ```sh
-cd "$HOME/dotfiles"
+cd "$HOME/.dotfiles"
 stow --delete --no-folding --target="$HOME" git zsh
 ```

@@ -30,11 +30,11 @@ brew "node"
 brew "watch"
 
 # Applications (Casks)
-cask "visual-studio-code"
 cask "docker-desktop"
 
 cask "brave-browser"
 cask "bitwarden"
+cask "iina"
 
 cask "rectangle"
 cask "dockdoor"

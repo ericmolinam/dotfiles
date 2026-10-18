@@ -5,5 +5,12 @@
 	defaultBranch = main
 [core]
 	excludesfile = ~/.gitignore_global
+	pager = delta
 [pull]
 	rebase = false
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+[merge]
+	conflictStyle = zdiff3

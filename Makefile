@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-STEPS := prereqs brew links gpg zsh helm claude macos
+STEPS := prereqs brew links gpg zsh claude macos
 
 .PHONY: help all check $(STEPS)
 
@@ -24,9 +24,6 @@ gpg: ## Create the gpg2 symlink
 zsh: ## Custom zsh config, oh-my-zsh and plugins
 	@./install.sh zsh
 
-helm: ## Helm plugins
-	@./install.sh helm
-
 claude: ## Claude CLI, plugin and skills
 	@./install.sh claude
 
@@ -34,5 +31,5 @@ macos: ## macOS defaults
 	@./install.sh macos
 
 check: ## Syntax check scripts and verify the Brewfile
-	@for f in install.sh helm/plugins.sh claude/install-claude.sh macos/defaults.sh; do bash -n $$f && echo "ok $$f"; done
+	@for f in install.sh claude/install-claude.sh macos/defaults.sh; do bash -n $$f && echo "ok $$f"; done
 	@brew bundle check --file=Brewfile

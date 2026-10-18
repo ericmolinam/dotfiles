@@ -9,7 +9,6 @@ brew "tfenv"
 brew "argocd"
 brew "sops"
 brew "awscli"
-brew "helm@3"
 brew "gnupg2"
 brew "chamber"
 brew "kubernetes-cli"
@@ -30,7 +29,7 @@ brew "watch"
 # Applications (Casks)
 # Browsers & Media
 cask "brave-browser"
-# cask "spotify"
+cask "spotify"
 
 # Editors, IDEs & Programming
 cask "claude"
@@ -44,4 +43,3 @@ cask "maccy"
 
 # Security & Communication
 cask "bitwarden"
-cask "slack"

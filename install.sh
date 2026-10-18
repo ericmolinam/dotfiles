@@ -18,7 +18,7 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARCH="$(uname -m)"
 ZSHRC="${HOME}/.zshrc"
 
-STEPS=(prereqs brew links gpg zsh helm claude macos)
+STEPS=(prereqs brew links gpg zsh claude macos)
 
 load_brew() {
     local brew_bin
@@ -182,12 +182,6 @@ step_zsh() {
         echo -e "\n# oh-my-zsh from dotfiles\n${omz_source}" >> "${ZSHRC}"
         log_success "oh-my-zsh config sourced in ${ZSHRC}."
     fi
-}
-
-step_helm() {
-    load_brew
-    log_info "Installing helm plugins..."
-    "${DOTFILES_DIR}/helm/plugins.sh"
 }
 
 step_claude() {

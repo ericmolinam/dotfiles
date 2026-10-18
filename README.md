@@ -1,28 +1,68 @@
-## Installation
+macOS configuration managed with GNU Stow.
 
-Clone this repository to `~/dotfiles` and run:
+---
 
-```bash
-cd ~/dotfiles
-./install.sh
+```sh
+xcode-select --install
 ```
 
-The script is safe to run multiple times:
-- If a tool or package is already installed, it is skipped.
-- Symlinks check existing targets and create automatic `.backup` copies before replacing if needed.
-- `~/.zprofile` and `~/.zshrc` lines are checked before appending to avoid duplicate entries.
+Install [Homebrew](https://brew.sh):
 
-## Make targets
+```sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-`make help` lists them. `make all` runs every step in order. Run one step with `make brew`, `make links`, `make gpg`, `make zsh`, `make claude`, `make macos` or `make prereqs`. `make check` checks script syntax and the Brewfile. `./install.sh <step>` does the same as `make <step>`.
+Follow Homebrew's printed instructions to add `brew shellenv` to `~/.zprofile`
+and load it in the current terminal. This file is not managed by Stow.
 
-## What gets installed
+```sh
+git clone https://github.com/ericmolinam/dotfiles.git "$HOME/.dotfiles"
+cd "$HOME/.dotfiles"
+brew bundle
+```
 
-| Step | Source | Content |
-|---|---|---|
-| Homebrew | `Brewfile` | CLI tools (jq, yq, gh, tfenv, sops, awscli, bat, git-delta, glow, go, node, lazydocker, herdr, hunk, ...) and casks (Brave, Claude, Docker, VS Code, Bitwarden, Slack, Rectangle, Maccy, DockDoor) |
-| Config links | `git/`, `vscode/` | `~/.gitconfig`, `~/.gitignore_global`, VS Code settings |
-| Shell | `zsh/.zshrc_custom`, `zsh/.zshrc_omz` | PATH and aliases; oh-my-zsh (agnoster, plugins `git kube-ps1 aws zsh-autosuggestions`) |
-| gpg | `install.sh` | `gpg2` symlink to `gpg` (Homebrew `gnupg2`) |
-| Claude Code | `claude/install-claude.sh` | CLI, plugin `atlassian@claude-plugins-official`, skills `herdr`, `find-skills`, `terraform-skill` |
-| macOS | `macos/defaults.sh` | system defaults |
+Review `Brewfile` first and remove any applications you no longer want.
+
+Skip either clone if its destination already exists.
+
+```sh
+git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
+git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions.git \
+  "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+```
+
+```sh
+cd "$HOME/dotfiles"
+backup_dir="$HOME/dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$backup_dir"
+for file in .zshrc .gitconfig .gitignore_global; do
+  if [ -e "$HOME/$file" ] || [ -L "$HOME/$file" ]; then
+    mv "$HOME/$file" "$backup_dir/"
+  fi
+done
+
+stow --simulate --verbose --no-folding --target="$HOME" git zsh
+```
+
+If the preview reports no conflicts, apply the links and restart the shell:
+
+```sh
+stow --verbose --no-folding --target="$HOME" git zsh
+exec zsh -l
+```
+
+Optional setup:
+
+Run either script as needed; the macOS script changes system preferences.
+
+```sh
+bash "$HOME/dotfiles/scripts/setup-claude.sh"
+bash "$HOME/dotfiles/scripts/macos-defaults.sh"
+```
+
+Unlink configuration:
+
+```sh
+cd "$HOME/dotfiles"
+stow --delete --no-folding --target="$HOME" git zsh
+```

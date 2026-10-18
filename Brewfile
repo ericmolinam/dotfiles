@@ -1,10 +1,12 @@
 cask_args appdir: "/Applications"
 
+# symlink farm manager
+brew "stow"
+
 # CLI tools
 brew "jq"
 brew "yq"
 brew "gh"
-brew "git"
 brew "tfenv"
 brew "argocd"
 brew "sops"
